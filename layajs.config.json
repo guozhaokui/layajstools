@@ -1,0 +1,11 @@
+[
+    {
+        "clsname":"laya.webgl.canvas.save.SaveBase",
+        "alldel":false,
+        "delfun":[
+            "isSaveMark",
+            "_createArray"
+        ]
+    }
+]
+
