@@ -1,9 +1,9 @@
 {
-  "name": "layajs",
+  "name": "layajst",
   "version": "1.1.0",
   "description": "",
   "bin": {
-    "layajs": "./bin/exe.js"
+    "layajst": "./bin/exe.js"
   },
   "main": "index.js",
   "scripts": {

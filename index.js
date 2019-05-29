@@ -237,7 +237,7 @@ function cutjs(infile, outfile) {
     const sc = ts.createSourceFile(infile, code, ts.ScriptTarget.Latest, true);
     addName(sc); // 为了调试方便，给每个节点加上名字
     getLayaInfo(sc);
-    console.log(JSON.stringify(layaclass));
+    //console.log(JSON.stringify(layaclass))    ;
     // layaclass 已经有值了
     // 设置删除标志
     configobj.forEach((e) => {

@@ -270,7 +270,7 @@ export function cutjs(infile:string,outfile:string){
 
     getLayaInfo(sc);
 
-    console.log(JSON.stringify(layaclass))    ;
+    //console.log(JSON.stringify(layaclass))    ;
     // layaclass 已经有值了
     // 设置删除标志
     configobj.forEach((e:{clsname:string,alldel:boolean,delfun:string[]}) => {
