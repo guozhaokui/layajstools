@@ -275,13 +275,17 @@ export function cutjs(infile:string,outfile:string){
     // 设置删除标志
     configobj.forEach((e:{clsname:string,alldel:boolean,delfun:string[]}) => {
         let cls = getPackClass(e.clsname);
+        if(!cls){
+            console.log('WARN: no this class :',e.clsname)
+            return;
+        }
         if(e.alldel){
             // 全部删除
              cls.alldel=true;
              return;
         }
         // 删除函数
-        e.delfun.forEach( (fname:string)=>{
+        e.delfun && e.delfun.forEach( (fname:string)=>{
             cls.delfunc(fname);
         })
 

@@ -242,13 +242,17 @@ function cutjs(infile, outfile) {
     // 设置删除标志
     configobj.forEach((e) => {
         let cls = getPackClass(e.clsname);
+        if (!cls) {
+            console.log('WARN: no this class :', e.clsname);
+            return;
+        }
         if (e.alldel) {
             // 全部删除
             cls.alldel = true;
             return;
         }
         // 删除函数
-        e.delfun.forEach((fname) => {
+        e.delfun && e.delfun.forEach((fname) => {
             cls.delfunc(fname);
         });
     });
