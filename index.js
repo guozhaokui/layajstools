@@ -4,11 +4,13 @@ const ts = require("typescript");
 const fs = require("fs");
 const path = require("path");
 class meminfo {
-    constructor(n, p, e) {
+    constructor(n, p, e, bp) {
+        this.id = 0;
         this.del = false;
         this.name = n;
         this.pos = p;
         this.end = e;
+        this.bodystart = bp;
     }
 }
 class ClassInfo {
@@ -133,7 +135,7 @@ function parseClassInfo(clsdef) {
                             if (bexpinfo.obj == clsname || bexpinfo.obj == '__proto') {
                                 // 静态或者原型函数统一处理
                                 cls.mems || (cls.mems = []);
-                                cls.mems.push(new meminfo(bexpinfo.mem, bexpinfo.pos, bexpinfo.end));
+                                cls.mems.push(new meminfo(bexpinfo.mem, bexpinfo.pos, bexpinfo.end, bexpinfo.bodystart));
                             }
                         }
                     }
@@ -183,6 +185,7 @@ function getCallParams(node) {
 }
 /**
  * 获得二元操作的信息
+ * 这里就是用来获得类的函数用的
  */
 function getBinExpInfo(exp) {
     if (exp.kind != ts.SyntaxKind.BinaryExpression)
@@ -194,7 +197,7 @@ function getBinExpInfo(exp) {
         // 左边是属性操作,右边是函数
         if (ex2.left.kind == ts.SyntaxKind.PropertyAccessExpression &&
             ex2.right.kind == ts.SyntaxKind.FunctionExpression) {
-            ret = { obj: '', mem: '', pos: 0, end: 0 };
+            ret = { obj: '', mem: '', pos: 0, end: 0, bodystart: 0 };
             let pa = ex2.left;
             let obj = getIdName(pa.expression); // 对象名
             let mem = getIdName(pa.name); // 对象的属性名
@@ -202,12 +205,20 @@ function getBinExpInfo(exp) {
             ret.mem = mem;
             ret.pos = exp.pos;
             ret.end = exp.end;
+            let func = ex2.right;
+            ret.bodystart = func.body.pos;
         }
     }
     //ex2.right;
     return ret;
 }
-function cutjs(infile, outfile) {
+/**
+ *
+ * @param infile
+ * @param outfile
+ * @param insert 是否插入统计代码
+ */
+function cutjs(infile, outfile, insert) {
     layaclass = [];
     let p = path.parse(infile).dir; // 输入文件所在路径
     let cfgfile = path.resolve(p, 'layajs.config.json');
@@ -258,23 +269,49 @@ function cutjs(infile, outfile) {
     });
     // 遍历节点，如果是删除的，就删除对应的代码
     let outstr = '';
+    // 要插入的统计对象
+    let statObj = {};
+    if (insert) {
+        // 如果是插入模式，先加上统计对象
+        // 先做一个数组，做id与对象的转换，这样后面只要访问id就行
+        let id = 0;
+        layaclass.forEach((v) => {
+            v.mems && v.mems.forEach((m) => {
+                m.id = id++;
+            });
+        });
+        outstr += 'var _gCodeCov=window._gCodeCov=new Array(' + id + ');\n';
+        // 输出统计脚本
+        fs.writeFileSync(path.resolve(p, 'clsinfo.json'), JSON.stringify(layaclass));
+    }
     let curp = 0;
     layaclass.forEach((v) => {
-        if (v.alldel) {
-            // 整个类都删除了
-            outstr += code.substring(curp, v.pos);
-            // TODO 要不要插入一个空类
-            curp = v.end;
-            return;
-        }
-        if (v.hasdel) {
-            // 检查删除的函数
-            v.mems.forEach((m) => {
-                if (m.del) {
-                    outstr += code.substring(curp, m.pos);
-                    curp = m.end;
-                }
+        if (insert) {
+            // 如果是插入模式
+            v.mems && v.mems.forEach((m) => {
+                outstr += code.substring(curp, m.bodystart);
+                outstr += `{_gCodeCov[${m.id}]++;`;
+                curp = m.bodystart + 1;
             });
+        }
+        else {
+            // 如果是删除模式
+            if (v.alldel) {
+                // 整个类都删除了
+                outstr += code.substring(curp, v.pos);
+                // TODO 要不要插入一个空类
+                curp = v.end;
+                return;
+            }
+            if (v.hasdel) {
+                // 检查删除的函数
+                v.mems.forEach((m) => {
+                    if (m.del) {
+                        outstr += code.substring(curp, m.pos);
+                        curp = m.end;
+                    }
+                });
+            }
         }
     });
     // 最后剩余的
@@ -282,4 +319,4 @@ function cutjs(infile, outfile) {
     fs.writeFileSync(path.resolve(p, 'ooo.js'), outstr);
 }
 exports.cutjs = cutjs;
-//cutjs('./jssample.js',null);
+cutjs('./jssample.js', null, true);
