@@ -23,6 +23,8 @@ class ClassInfo {
         this.end = e;
     }
     delfunc(f) {
+        if (!this.mems)
+            return;
         for (let i = 0; i < this.mems.length; i++) {
             let sm = this.mems[i];
             if (sm.name == f) {
@@ -280,7 +282,7 @@ function cutjs(infile, outfile, insert) {
                 m.id = id++;
             });
         });
-        outstr += 'var _gCodeCov=window._gCodeCov=new Array(' + id + ');\n';
+        outstr += 'var _gCodeCov=window._gCodeCov=new Array(' + id + ');\n_gCodeCov.fill(0);\n';
         // 输出统计脚本
         fs.writeFileSync(path.resolve(p, 'clsinfo.json'), JSON.stringify(layaclass));
     }
@@ -319,4 +321,12 @@ function cutjs(infile, outfile, insert) {
     fs.writeFileSync(path.resolve(p, 'ooo.js'), outstr);
 }
 exports.cutjs = cutjs;
-cutjs('./jssample.js', null, true);
+//cutjs('./Main.max.js',null,true);
+// 裁剪的方法
+/**
+ * 1. 修改index.js 中的脚本参数，执行，会得到clsinfo.json文件,并且修改输入文件得到ooo.js
+ * 2. 执行这个脚本，从window中拷贝 _gCodeCov 数组，复制到 callinfo.json中
+ * 3. 执行 getConvInfo.js 脚本，得到一个 layajs.config.json.o 改名去掉o
+ * 4. 得到的这个json可以用来裁剪。如果有什么错误，就手动删掉
+ *
+ */

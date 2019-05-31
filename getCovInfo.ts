@@ -44,9 +44,9 @@ class ClassInfo{
     }
 }
 
-var clsinfo:ClassInfo[] = JSON.parse( fs.readFileSync( 'clsinfo.json', 'utf8'));
+var clsinfo:ClassInfo[] = JSON.parse( fs.readFileSync( './clsinfo.json', 'utf8'));
 
-var callinfo=[];// 运行结果拷贝过来
+var callinfo=JSON.parse(fs.readFileSync('./callinfo.json','utf8'));// 函数调用结果
 
 /**
  * 全部初始化为删除
@@ -65,13 +65,20 @@ function init(){
  * @param count 
  */
 function setCallNum(fid:number,count:number){
-    clsinfo.forEach((c:ClassInfo)=>{
-        c.mems && c.mems.forEach((m:meminfo)=>{
-            if(m.id==fid){
-                m.del=false;
+    if(count==0)
+        return;
+    for(let ci=0; ci<clsinfo.length; ci++){
+        let curcls = clsinfo[ci];
+        if(curcls.mems ){
+            let mems = curcls.mems;
+            for( let mi=0; mi<mems.length; mi++){
+                if(mems[mi].id==fid){
+                    mems[mi].del=false;
+                    return;
+                }
             }
-        })
-    });
+        }
+    }
 }
 
 init();
@@ -79,5 +86,20 @@ callinfo.forEach((v:number,id:number)=>{
     setCallNum(id,v);
 });
 
-//输出
-//TODO
+//输出。先只删除函数，不删除类，因为没有检查变量和accessor和构造函数的调用
+var outarr=[];
+clsinfo.forEach((c:ClassInfo)=>{
+    var curcls={clsname:c.packageclass,delfun:null};
+    var delfun:string[]=[];
+    c.mems && c.mems.forEach((m:meminfo)=>{
+        if(m.del){
+            delfun.push(m.name);
+        }
+    });
+    if(delfun.length>0){
+        curcls.delfun=delfun;
+        outarr.push(curcls);
+    }
+});
+
+fs.writeFileSync( './layajs.config.json.o',JSON.stringify(outarr,null,'\t'));

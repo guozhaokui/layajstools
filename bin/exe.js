@@ -24,5 +24,5 @@ if(!fs.existsSync(srcpath)){
 var p = path.parse(srcpath).dir;
 var out = path.resolve(p,'ooo.js');
 
-cutjs(srcpath,out);
+cutjs(srcpath,out,process.argv[3]);
 
